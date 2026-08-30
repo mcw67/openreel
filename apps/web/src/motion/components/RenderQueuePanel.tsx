@@ -22,6 +22,9 @@ import {
   type MotionExportResolutionScale,
 } from "../export-motion-frame";
 import { runMotionRenderQueue } from "../render-queue-runner";
+import type { ExportDestination } from "../../services/export-runner";
+import { getSecret } from "../../services/secure-storage";
+import { useSettingsStore } from "../../stores/settings-store";
 import {
   useMotionStore,
   type MotionRenderQueueFormat,
@@ -110,6 +113,8 @@ export function RenderQueuePanel({
   embedded = false,
 }: RenderQueuePanelProps): JSX.Element {
   const [isRunning, setIsRunning] = useState(false);
+  const [destination, setDestination] = useState<ExportDestination>("disk");
+  const nugitConfigured = useSettingsStore((s) => s.configuredServices.includes("nugit"));
   const [selectedFormat, setSelectedFormat] =
     useState<MotionRenderQueueFormat>("mp4");
   const [resolutionScale, setResolutionScale] =
@@ -196,9 +201,35 @@ export function RenderQueuePanel({
 
   const runQueue = async () => {
     if (isRunning || runnableCount === 0 || guardrailBlocking) return;
+
+    let nugitApiKey: string | null = null;
+    if (destination === "nugit") {
+      try {
+        nugitApiKey = await getSecret("nugit");
+      } catch (error) {
+        toast.error(
+          "nugit Vault locked",
+          error instanceof Error ? error.message : "Unlock your API keys first.",
+        );
+        return;
+      }
+      if (!nugitApiKey) {
+        toast.error(
+          "No nugit Vault key",
+          "Add a nugit Vault API key in Settings → API Keys first.",
+        );
+        return;
+      }
+    }
+
     setIsRunning(true);
     try {
-      const result = await runMotionRenderQueue({ project, compositions });
+      const result = await runMotionRenderQueue({
+        project,
+        compositions,
+        destination,
+        nugitApiKey: nugitApiKey ?? undefined,
+      });
       if (result.alreadyRunning) {
         toast.error(
           "Render queue already running",
@@ -268,6 +299,22 @@ export function RenderQueuePanel({
               }}
             />
           </Field>
+          {nugitConfigured && (
+            <Field label="Save to">
+              <SelectInput
+                value={destination}
+                disabled={isRunning}
+                options={[
+                  { value: "disk", label: "Disk (download)" },
+                  { value: "nugit", label: "nugit Vault" },
+                ]}
+                onChange={(value) => {
+                  if (value === "") return;
+                  setDestination(value as ExportDestination);
+                }}
+              />
+            </Field>
+          )}
           <Field label="Resolution">
             <div className="flex gap-1" role="group" aria-label="Resolution">
               {RESOLUTION_OPTIONS.map((option) => {

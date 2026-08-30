@@ -21,7 +21,16 @@ import {
 import { ExportDialog } from "./ExportDialog";
 import { CompressDialog } from "./CompressDialog";
 import { deriveSourceExportMatch } from "../../services/export-source-match";
-import { useExportRunner, extForFormat, exportFilename, writeBlobToWritable } from "../../services/export-runner";
+import {
+  useExportRunner,
+  extForFormat,
+  exportFilename,
+  writeBlobToWritable,
+  createNugitVaultWritable,
+  mimeForExt,
+  type ExportDestination,
+} from "../../services/export-runner";
+import { getSecret } from "../../services/secure-storage";
 import { ScreenRecorder } from "./ScreenRecorder";
 import { HistoryPanel } from "./inspector/HistoryPanel";
 import { ProjectSwitcher } from "./ProjectSwitcher";
@@ -258,12 +267,29 @@ export const Toolbar: React.FC = () => {
   );
 
   const handleCustomExport = useCallback(
-    async (settings: VideoExportSettings) => {
+    async (settings: VideoExportSettings, destination: ExportDestination = "disk") => {
       setIsExportDialogOpen(false);
 
       try {
         const ext = extForFormat(settings.format);
-        const writable = await showSavePicker(exportFilename(project.name, ext), ext);
+        const filename = exportFilename(project.name, ext);
+
+        let writable: FileSystemWritableFileStream;
+        if (destination === "nugit") {
+          const apiKey = await getSecret("nugit");
+          if (!apiKey) {
+            throw new Error("Add a nugit Vault API key in Settings → API Keys first.");
+          }
+          writable = createNugitVaultWritable(
+            filename,
+            mimeForExt(ext),
+            project.name,
+            apiKey,
+            (progress) => reportProgress(progress.percent / 100, progress.phase),
+          );
+        } else {
+          writable = await showSavePicker(filename, ext);
+        }
 
         beginExport();
 

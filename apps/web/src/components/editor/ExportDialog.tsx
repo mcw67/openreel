@@ -52,6 +52,8 @@ import type {
   CompressionPlan,
 } from "@openreel/core";
 import type { SourceExportMatch } from "../../services/export-source-match";
+import { useSettingsStore } from "../../stores/settings-store";
+import type { ExportDestination } from "../../services/export-runner";
 import {
   getDeviceProfile,
   estimateExportTime,
@@ -78,7 +80,7 @@ const WEB_EXPORT_GUARDRAIL_MESSAGE =
 interface ExportDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (settings: VideoExportSettings) => void;
+  onExport: (settings: VideoExportSettings, destination: ExportDestination) => void;
   duration?: number;
   projectWidth?: number;
   projectHeight?: number;
@@ -391,11 +393,14 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     }
   }, [guardrailActive]);
 
+  const nugitConfigured = useSettingsStore((s) => s.configuredServices.includes("nugit"));
+  const [destination, setDestination] = useState<ExportDestination>("disk");
+
   const handleExport = useCallback(() => {
     if (guardrailBlocking) return;
     if (activeTab === "reduce") {
       if (!reducePlan) return;
-      onExport(compressionPlanToExportSettings(reducePlan));
+      onExport(compressionPlanToExportSettings(reducePlan), destination);
       onClose();
       return;
     }
@@ -407,7 +412,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       ...chosen,
       encodeMode: customSettings.encodeMode ?? "balanced",
     };
-    onExport(settings);
+    onExport(settings, destination);
     onClose();
   }, [
     activeTab,
@@ -417,6 +422,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     onExport,
     onClose,
     guardrailBlocking,
+    destination,
   ]);
 
   const handleMatchSourceExport = useCallback(() => {
@@ -431,9 +437,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       bitrate: sourceMatch.bitrate,
       encodeMode: customSettings.encodeMode ?? "balanced",
     };
-    onExport(settings);
+    onExport(settings, destination);
     onClose();
-  }, [sourceMatch, customSettings, onExport, onClose]);
+  }, [sourceMatch, customSettings, onExport, onClose, destination]);
 
   const formatFileSize = (bitrate: number, durationSec: number): string => {
     const bytes = (bitrate * 1000 * durationSec) / 8;
@@ -1537,6 +1543,18 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-2">
+                {nugitConfigured && (
+                  <Selector
+                    label=""
+                    value={destination}
+                    onChange={(value) => setDestination(value as ExportDestination)}
+                    options={[
+                      { value: "disk", label: "Save to Disk" },
+                      { value: "nugit", label: "nugit Vault" },
+                    ]}
+                    width={140}
+                  />
+                )}
                 <Button label="Cancel" variant="ghost" onClick={onClose} />
                 <Button
                   label={

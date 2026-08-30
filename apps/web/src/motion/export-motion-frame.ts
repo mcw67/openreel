@@ -23,7 +23,9 @@ import {
 import { resolveCreationMotionSceneBinding } from "@openreel/core/creation/index";
 import {
   createDownloadWritable,
+  createNugitVaultWritable,
   mimeForExt,
+  type ExportDestination,
 } from "../services/export-runner";
 import { createWebMotionAssetResolver } from "./motion-asset-resolver";
 import { NativeFFmpegBackend } from "../services/native-ffmpeg-backend";
@@ -167,6 +169,10 @@ export interface ExportMotionCompositionSceneOptions {
   readonly mediaItems?: readonly MediaItem[];
   readonly creation?: CreationProjectState;
   readonly onProgress?: (progress: ExportProgress) => void;
+  /** Defaults to "disk". "nugit" requires `nugitApiKey` (ignored on the
+   *  native Aurora desktop-export path, which always writes to disk). */
+  readonly destination?: ExportDestination;
+  readonly nugitApiKey?: string;
 }
 
 export interface ExportMotionCompositionSceneResult {
@@ -688,6 +694,8 @@ export async function exportMotionCompositionScene({
   mediaItems = [],
   creation,
   onProgress,
+  destination = "disk",
+  nugitApiKey,
 }: ExportMotionCompositionSceneOptions): Promise<ExportMotionCompositionSceneResult> {
   const requestedDescriptor =
     MOTION_EXPORT_FORMATS.find((entry) => entry.id === format) ??
@@ -746,10 +754,30 @@ export async function exportMotionCompositionScene({
       onProgress,
     );
   }
-  const writable = await createDownloadWritable(
-    resolvedFilename,
-    mimeForExt(descriptor.extension),
-  );
+  if (destination === "nugit" && !nugitApiKey) {
+    throw new Error("Add a nugit Vault API key in Settings → API Keys first.");
+  }
+  const writable =
+    destination === "nugit" && nugitApiKey
+      ? createNugitVaultWritable(
+          resolvedFilename,
+          mimeForExt(descriptor.extension),
+          project.name,
+          nugitApiKey,
+          // The upload runs inside EncoderBackend.finalize(), which the
+          // engine itself reports as "muxing" right before calling it — reuse
+          // that phase rather than inventing values outside ExportProgress's
+          // phase union; the percent still reflects real upload progress.
+          (progress) =>
+            onProgress?.({
+              phase: progress.phase === "complete" ? "complete" : "muxing",
+              progress: progress.percent / 100,
+              estimatedTimeRemaining: 0,
+              currentFrame: 0,
+              totalFrames: 0,
+            }),
+        )
+      : await createDownloadWritable(resolvedFilename, mimeForExt(descriptor.extension));
   const engine = getExportEngine();
   await engine.initialize();
 

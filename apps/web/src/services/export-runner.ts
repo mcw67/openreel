@@ -5,6 +5,7 @@ import {
   type ExportResult,
   type Project,
 } from "@openreel/core";
+import { uploadExportToNugitVault, type NugitVaultUploadProgress } from "./nugit/vault-client";
 
 export interface ExportRunnerState {
   isExporting: boolean;
@@ -15,6 +16,10 @@ export interface ExportRunnerState {
 }
 
 export type ExportContainer = "mp4" | "webm" | "mov" | "wav";
+
+/** Where a finished export goes: the local filesystem, or straight into the
+ *  signed-in creator's nugit Vault (see `createNugitVaultWritable`). */
+export type ExportDestination = "disk" | "nugit";
 
 const MIME_BY_EXT: Record<string, string> = {
   mp4: "video/mp4",
@@ -247,6 +252,71 @@ async function createFallbackWritable(
   mime: string,
 ): Promise<FileSystemWritableFileStream> {
   return (await createOpfsDownloadWritable(filename)) ?? createBufferedDownloadWritable(filename, mime);
+}
+
+/**
+ * Destination that buffers the export in memory — same shape as
+ * `createBufferedDownloadWritable` — but on `close()` uploads it straight
+ * into the signed-in creator's nugit Vault instead of triggering a disk
+ * download. `close()` is awaited from inside `EncoderBackend.finalize()`
+ * (packages/core), so the whole encrypt+upload pipeline runs before the
+ * export engine reports "complete"; if it throws, the engine surfaces that
+ * as a normal export failure (see ExportEngine.exportVideo's catch block) —
+ * callers don't need special-case error handling beyond what they already
+ * have for a failed export.
+ */
+export function createNugitVaultWritable(
+  filename: string,
+  mime: string,
+  title: string,
+  apiKey: string,
+  onProgress?: (progress: NugitVaultUploadProgress) => void,
+): FileSystemWritableFileStream {
+  let buffer = new Uint8Array(16 * 1024 * 1024);
+  let length = 0;
+  let cursor = 0;
+
+  const grow = (needed: number) => {
+    if (needed <= buffer.length) return;
+    let newSize = buffer.length;
+    while (newSize < needed) newSize *= 2;
+    const next = new Uint8Array(newSize);
+    next.set(buffer.subarray(0, length));
+    buffer = next;
+  };
+
+  const writeBytes = (bytes: Uint8Array, position: number) => {
+    const end = position + bytes.byteLength;
+    grow(end);
+    buffer.set(bytes, position);
+    if (end > length) length = end;
+    cursor = end;
+  };
+
+  return {
+    seek(position: number) {
+      cursor = position;
+      return Promise.resolve();
+    },
+    write(data: unknown) {
+      if (data instanceof ArrayBuffer) {
+        writeBytes(new Uint8Array(data), cursor);
+      } else if (ArrayBuffer.isView(data)) {
+        writeBytes(new Uint8Array(data.buffer, data.byteOffset, data.byteLength), cursor);
+      }
+      return Promise.resolve();
+    },
+    async close() {
+      const blob = new Blob([buffer.slice(0, length)], { type: mime });
+      await uploadExportToNugitVault(blob, filename, mime, title, apiKey, onProgress);
+    },
+    abort() {
+      return Promise.resolve();
+    },
+    truncate() {
+      return Promise.resolve();
+    },
+  } as unknown as FileSystemWritableFileStream;
 }
 
 export async function createDownloadWritable(

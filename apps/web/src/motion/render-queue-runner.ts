@@ -1,6 +1,7 @@
 import type { ExportProgress, MotionComposition } from "@openreel/core";
 import type { Project } from "@openreel/core/types/project";
 import { exportMotionCompositionScene } from "./export-motion-frame";
+import type { ExportDestination } from "../services/export-runner";
 import {
   useMotionStore,
   type MotionRenderQueueItem,
@@ -22,6 +23,9 @@ export interface RenderQueueRunResult {
 export interface RunRenderQueueDeps {
   readonly project: Project;
   readonly compositions: readonly MotionComposition[];
+  /** Applies to every item in this run. Defaults to "disk". */
+  readonly destination?: ExportDestination;
+  readonly nugitApiKey?: string;
 }
 
 let queueRunning = false;
@@ -61,7 +65,7 @@ export async function runMotionRenderQueue(
 async function runQueueItems(
   deps: RunRenderQueueDeps,
 ): Promise<RenderQueueRunResult> {
-  const { project, compositions } = deps;
+  const { project, compositions, destination = "disk", nugitApiKey } = deps;
   const store = useMotionStore.getState();
   const updateRenderQueueItem = store.updateRenderQueueItem;
   const items = useMotionStore
@@ -110,6 +114,8 @@ async function runQueueItems(
           ? { resolutionScale: item.resolutionScale }
           : {}),
         isCanceled: () => isItemCancelRequested(item.id),
+        destination,
+        nugitApiKey,
         onProgress: (progress: ExportProgress) => {
           updateRenderQueueItem(item.id, {
             progress: Math.round(progress.progress * 100),

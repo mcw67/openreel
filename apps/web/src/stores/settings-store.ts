@@ -45,6 +45,12 @@ export const SERVICE_REGISTRY: readonly ServiceConfig[] = [
     description: "AI aggregator for image generation, vectors, and creative assets",
     docsUrl: "https://www.freepik.com/api",
   },
+  {
+    id: "nugit",
+    label: "nugit Vault",
+    description: "Export finished clips and motion graphics straight into your nugit Vault",
+    docsUrl: "https://nugit.cloud/profile",
+  },
 ] as const;
 
 export type TtsProvider = "elevenlabs";
