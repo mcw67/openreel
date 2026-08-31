@@ -365,6 +365,24 @@ export const ApiKeysPanel: React.FC = () => {
                 : `${SERVICE_REGISTRY.find((s) => s.id === addingService)?.label} Key`}
             </Text>
           </div>
+          {addingService === "nugit" && (
+            <ol className="mb-3 space-y-1 pl-4 text-xs text-fg-muted list-decimal">
+              <li>
+                Go to{" "}
+                <a
+                  href="https://nugit.cloud/profile"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline underline-offset-2"
+                >
+                  nugit.cloud/profile
+                </a>{" "}
+                and sign in.
+              </li>
+              <li>Under "Personal API Keys," click "New" to create one (any label works).</li>
+              <li>Copy the key shown — it's only displayed once — and paste it below.</li>
+            </ol>
+          )}
           <ToolcraftTextInputControl
             label="API key"
             isLabelHidden
