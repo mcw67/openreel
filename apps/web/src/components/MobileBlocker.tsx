@@ -69,8 +69,8 @@ export function MobileBlocker() {
         <div className="pt-2">
           <Button
             as="a"
-            label="Learn More"
-            href="https://openreel.video"
+            label="Back to nugit"
+            href="https://nugit.cloud"
             className="inline-flex items-center gap-2 px-8 py-3 bg-primary hover:bg-primary-hover active:bg-primary-active text-white font-medium rounded-lg transition-all duration-200 shadow-glow hover:shadow-glow-lg transform hover:scale-[1.02] active:scale-[0.98]"
           />
         </div>
