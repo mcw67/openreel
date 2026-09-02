@@ -33,22 +33,22 @@
     color-scheme: dark;
   }
 
-  /* light theme — Claude Design "Editor" mock (emerald brand accent, Inter) */
+  /* light theme — ported from nugit's "Apple" theme (2026-09-02) */
   :root,
   [data-theme="light"] {
-    --bg: #f4f4f6;            /* window / app background */
+    --bg: #fbfbfd;            /* window / app background */
     --bg-1: #ffffff;          /* cards & elevated surfaces */
-    --bg-2: #f0f0f3;          /* recessed insets, pills, search fields */
-    --bg-3: #ececed;          /* segmented-control track */
+    --bg-2: #f5f5f7;          /* recessed insets, pills, search fields */
+    --bg-3: #e8e8ed;          /* segmented-control track */
     --bg-elev: #ffffff;
-    --border: #e7e7ea;        /* card / input borders */
-    --border-strong: #d4d4d8;
+    --border: #d2d2d7;        /* card / input borders */
+    --border-strong: #c1c1c6;
     --fg: #1d1d1f;            /* primary text */
-    --fg-2: #3a3a3c;          /* secondary text */
-    --fg-3: #7c7c82;          /* tertiary / labels */
-    --fg-muted: #9a9a9f;      /* muted / placeholder */
-    --hover: #f0f0f3;
-    --selected: #e6f9f1;      /* emerald-soft selected state */
+    --fg-2: #6e6e73;          /* secondary text */
+    --fg-3: #86868b;          /* tertiary / labels */
+    --fg-muted: #86868b;      /* muted / placeholder */
+    --hover: #f5f5f7;
+    --selected: rgba(0, 113, 227, 0.12); /* accent-soft selected state */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
     --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.16);
@@ -60,12 +60,12 @@
     --stage-bg: #ffffff;
     --screen-bg: #ffffff;
 
-    /* accent (brand emerald #10b981 — matches the OpenReel logo) */
-    --accent: #10b981;
-    --accent-strong: #059669;
-    --accent-soft: #e6f9f1;
+    /* accent (nugit "Apple" theme accent #0071e3) */
+    --accent: #0071e3;
+    --accent-strong: #0077ed;
+    --accent-soft: rgba(0, 113, 227, 0.12);
     --accent-fg: #ffffff;
-    --accent-glow: rgba(16, 185, 129, 0.35);
+    --accent-glow: rgba(0, 113, 227, 0.35);
 
     /* clip palette */
     --c-video: #6a9bd8;
@@ -74,38 +74,38 @@
     --c-music: #14b8a6;
   }
 
-  /* dark theme — cinematic, near-black like reference */
+  /* dark theme — ported from nugit's "Charcoal & Champagne" theme (2026-09-02) */
   [data-theme="dark"],
   .dark {
-    --bg: oklch(0.12 0.005 240);
-    --bg-1: oklch(0.16 0.006 240);
-    --bg-2: oklch(0.2 0.007 240);
-    --bg-3: oklch(0.24 0.008 240);
-    --bg-elev: oklch(0.22 0.007 240);
-    --border: oklch(0.26 0.008 240);
-    --border-strong: oklch(0.34 0.01 240);
-    --fg: oklch(0.97 0.003 240);
-    --fg-2: oklch(0.78 0.008 240);
-    --fg-3: oklch(0.6 0.012 240);
-    --fg-muted: oklch(0.48 0.012 240);
-    --hover: oklch(0.22 0.009 240);
-    --selected: oklch(0.30 0.03 162);
+    --bg: #0f1115;
+    --bg-1: #1a1d24;
+    --bg-2: #22262f;
+    --bg-3: #2a2f38;
+    --bg-elev: #1a1d24;
+    --border: #2a2f38;
+    --border-strong: #353a45;
+    --fg: #f1f5f9;
+    --fg-2: #94a3b8;
+    --fg-3: #64748b;
+    --fg-muted: #64748b;
+    --hover: #22262f;
+    --selected: rgba(201, 169, 110, 0.18);
     --shadow-sm: 0 1px 0 oklch(0 0 0 / 0.4), 0 1px 2px oklch(0 0 0 / 0.3);
     --shadow-md: 0 1px 0 oklch(0 0 0 / 0.5), 0 6px 24px oklch(0 0 0 / 0.4);
     --shadow-lg: 0 1px 0 oklch(0 0 0 / 0.6), 0 24px 60px oklch(0 0 0 / 0.5);
-    --track-bg: oklch(0.12 0.006 240);
-    --tl-bg: oklch(0.1 0.005 240);
-    --waveform: oklch(0.78 0.16 162 / 0.85);
+    --track-bg: #0f1115;
+    --tl-bg: #0f1115;
+    --waveform: rgba(201, 169, 110, 0.85);
     --stage-bg: oklch(0.08 0.004 240);
     /* the preview "screen" itself (canvas + letterbox): black in dark */
     --screen-bg: oklch(0 0 0);
 
-    /* accent (brand emerald — matches the OpenReel logo) */
-    --accent: oklch(0.7 0.15 162);
-    --accent-strong: oklch(0.63 0.16 162);
-    --accent-soft: oklch(0.7 0.15 162 / 0.2);
-    --accent-fg: oklch(0.99 0 0);
-    --accent-glow: oklch(0.7 0.15 162 / 0.45);
+    /* accent (nugit "Charcoal & Champagne" accent #C9A96E) */
+    --accent: #c9a96e;
+    --accent-strong: #d7b97d;
+    --accent-soft: rgba(201, 169, 110, 0.18);
+    --accent-fg: #0f1115;
+    --accent-glow: rgba(201, 169, 110, 0.45);
   }
 
   [data-density="compact"] {
@@ -128,41 +128,41 @@
     --card-foreground: 240 10% 4%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 4%;
-    --primary: 160 84% 39%;
+    --primary: 210 100% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;
+    --secondary: 240 9% 96%;
     --secondary-foreground: 240 6% 10%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
-    --accent-hsl: 240 5% 96%;
+    --muted: 240 9% 96%;
+    --muted-foreground: 240 2% 44%;
+    --accent-hsl: 240 9% 96%;
     --accent-foreground: 240 6% 10%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --input: 240 6% 90%;
-    --ring: 160 84% 39%;
+    --input: 240 12% 92%;
+    --ring: 210 100% 45%;
     --radius: 0.625rem;
   }
 
   [data-theme="dark"],
   .dark {
-    --background: 220 12% 9%;
-    --foreground: 0 0% 95%;
-    --card: 220 10% 13%;
-    --card-foreground: 0 0% 95%;
-    --popover: 220 10% 13%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 158 64% 52%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 8% 18%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 220 8% 18%;
-    --muted-foreground: 220 8% 65%;
-    --accent-hsl: 220 8% 22%;
-    --accent-foreground: 0 0% 95%;
+    --background: 220 17% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 16% 12%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 16% 12%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 39 46% 61%;
+    --primary-foreground: 220 17% 7%;
+    --secondary: 222 16% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 222 16% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent-hsl: 222 16% 16%;
+    --accent-foreground: 210 40% 96%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 95%;
-    --input: 220 8% 24%;
-    --ring: 158 64% 52%;
+    --input: 219 14% 19%;
+    --ring: 39 46% 61%;
   }
 
   html,
