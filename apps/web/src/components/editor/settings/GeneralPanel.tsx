@@ -8,7 +8,7 @@ import { ToolcraftText as Text } from "@openreel/ui";
 import { ToolcraftTextInputControl as TextInput } from "@openreel/ui";
 import { useSettingsStore, SERVICE_REGISTRY, type TtsProvider, type LlmProvider, type AggregatorProvider } from "../../../stores/settings-store";
 import { useProjectStore } from "../../../stores/project-store";
-import { modelsFor } from "../../../services/agent/models";
+import { defaultModelFor, modelsFor } from "../../../services/agent/models";
 import { EDITING_FRAME_RATE_OPTIONS } from "../editing-frame-rate";
 
 const ASPECT_PRESETS: Array<{ label: string; width: number; height: number }> = [
@@ -349,9 +349,13 @@ export const GeneralPanel: React.FC = () => {
               size="md"
               width={180}
               value={defaultLlmProvider ?? ""}
-              onChange={(value) =>
-                setDefaultLlmProvider((value || null) as LlmProvider | null)
-              }
+              onChange={(value) => {
+                const next = (value || null) as LlmProvider | null;
+                setDefaultLlmProvider(next);
+                if (next === "anthropic" && !llmModel.trim()) {
+                  setLlmModel(defaultModelFor("anthropic"));
+                }
+              }}
               options={[
                 { label: "Choose API format…", value: "" },
                 ...llmProviders.map((s) => ({ label: s.label, value: s.id })),

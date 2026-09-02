@@ -16,6 +16,7 @@ import type {
 import { isSessionUnlocked, getSecret } from "../services/secure-storage";
 import { getLiveEditorHost, runExclusive } from "../services/agent/host-singleton";
 import { makeBYOKClient } from "../services/agent/llm-transport";
+import { defaultModelFor } from "../services/agent/models";
 import { normalizeCompatibleBaseUrl } from "../services/api-proxy";
 import {
   conversationTitle,
@@ -167,10 +168,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ error: "Choose an API format in AI settings." });
       return;
     }
-    const model = settings.llmModel.trim();
+    // "anthropic" has a known model list — fall back to the default rather
+    // than blocking, since a stale/empty llmModel can otherwise strand a
+    // user who picked the provider before a model was auto-selected.
+    const model = settings.llmModel.trim() || (provider === "anthropic" ? defaultModelFor("anthropic") : "");
     if (!model) {
       set({ error: "Enter or choose a model ID in AI settings." });
       return;
+    }
+    if (model !== settings.llmModel) {
+      settings.setLlmModel(model);
     }
     // "anthropic" is a fixed, built-in endpoint (routed through our own
     // same-origin proxy) — there's no user-supplied host to normalize.
