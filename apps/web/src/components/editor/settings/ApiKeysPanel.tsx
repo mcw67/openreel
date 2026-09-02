@@ -18,7 +18,11 @@ import { ToolcraftIconButton as IconButton } from "@openreel/ui";
 import { ToolcraftLink as Link } from "@openreel/ui";
 import { ToolcraftText as Text } from "@openreel/ui";
 import { ToolcraftTextInputControl } from "@openreel/ui";
-import { useSettingsStore, SERVICE_REGISTRY } from "../../../stores/settings-store";
+import {
+  useSettingsStore,
+  SERVICE_REGISTRY,
+  ANTHROPIC_WORKSPACE_SECRET_ID,
+} from "../../../stores/settings-store";
 import {
   isMasterPasswordSet,
   isSessionUnlocked,
@@ -49,8 +53,12 @@ export const ApiKeysPanel: React.FC = () => {
   >([]);
   const [addingService, setAddingService] = useState<string | null>(null);
   const [newKeyValue, setNewKeyValue] = useState("");
+  const [newWorkspaceId, setNewWorkspaceId] = useState("");
   const [revealedKeys, setRevealedKeys] = useState<Record<string, string>>({});
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
+  const [hasWorkspaceId, setHasWorkspaceId] = useState(false);
+  const [editingWorkspaceId, setEditingWorkspaceId] = useState(false);
+  const [workspaceIdDraft, setWorkspaceIdDraft] = useState("");
 
   const refreshState = useCallback(async () => {
     const isSet = await isMasterPasswordSet();
@@ -75,7 +83,10 @@ export const ApiKeysPanel: React.FC = () => {
               )
             ).filter((key): key is NonNullable<typeof key> => key !== null)
           : await listSecrets();
-      setStoredKeys(keys);
+      // The workspace ID is a companion sub-field of the "anthropic" key,
+      // not a service of its own — don't show it as a stray stored key.
+      setStoredKeys(keys.filter((k) => k.id !== ANTHROPIC_WORKSPACE_SECRET_ID));
+      setHasWorkspaceId(await hasSecret(ANTHROPIC_WORKSPACE_SECRET_ID));
     }
   }, []);
 
@@ -127,8 +138,16 @@ export const ApiKeysPanel: React.FC = () => {
 
       try {
         await saveSecret(serviceId, service.label, newKeyValue.trim());
+        if (serviceId === "anthropic" && newWorkspaceId.trim()) {
+          await saveSecret(
+            ANTHROPIC_WORKSPACE_SECRET_ID,
+            "Anthropic Workspace ID",
+            newWorkspaceId.trim(),
+          );
+        }
         addConfiguredService(serviceId);
         setNewKeyValue("");
+        setNewWorkspaceId("");
         setAddingService(null);
         await refreshState();
         toast.success(`${service.label} key saved`, "API key encrypted and stored.");
@@ -136,7 +155,7 @@ export const ApiKeysPanel: React.FC = () => {
         toast.error("Failed to save", err instanceof Error ? err.message : "Unknown error");
       }
     },
-    [newKeyValue, addConfiguredService, refreshState],
+    [newKeyValue, newWorkspaceId, addConfiguredService, refreshState],
   );
 
   const handleDeleteKey = useCallback(
@@ -144,6 +163,9 @@ export const ApiKeysPanel: React.FC = () => {
       const service = SERVICE_REGISTRY.find((s) => s.id === serviceId);
       try {
         await deleteSecret(serviceId);
+        if (serviceId === "anthropic") {
+          await deleteSecret(ANTHROPIC_WORKSPACE_SECRET_ID);
+        }
         removeConfiguredService(serviceId);
         setRevealedKeys((prev) => {
           const next = { ...prev };
@@ -158,6 +180,24 @@ export const ApiKeysPanel: React.FC = () => {
     },
     [removeConfiguredService, refreshState],
   );
+
+  const handleSaveWorkspaceId = useCallback(async () => {
+    const trimmed = workspaceIdDraft.trim();
+    try {
+      if (trimmed) {
+        await saveSecret(ANTHROPIC_WORKSPACE_SECRET_ID, "Anthropic Workspace ID", trimmed);
+        toast.success("Workspace ID saved");
+      } else {
+        await deleteSecret(ANTHROPIC_WORKSPACE_SECRET_ID);
+        toast.success("Workspace ID removed");
+      }
+      setEditingWorkspaceId(false);
+      setWorkspaceIdDraft("");
+      await refreshState();
+    } catch (err) {
+      toast.error("Failed to save", err instanceof Error ? err.message : "Unknown error");
+    }
+  }, [workspaceIdDraft, refreshState]);
 
   const handleRevealKey = useCallback(async (serviceId: string) => {
     if (revealedKeys[serviceId]) {
@@ -348,6 +388,61 @@ export const ApiKeysPanel: React.FC = () => {
                   ? `Added ${new Date(stored.createdAt).toLocaleDateString()} · Updated ${new Date(stored.updatedAt).toLocaleDateString()}`
                   : "Stored securely in the system keychain"}
               </Text>
+
+              {stored.id === "anthropic" && (
+                <div className="mt-3 border-t border-border pt-3">
+                  {editingWorkspaceId ? (
+                    <>
+                      <Text type="supporting" color="secondary" display="block" className="mb-1 text-xs font-medium">
+                        Workspace ID
+                      </Text>
+                      <ToolcraftTextInputControl
+                        label="Workspace ID"
+                        isLabelHidden
+                        value={workspaceIdDraft}
+                        onChange={setWorkspaceIdDraft}
+                        placeholder="wrkspc_… (leave blank to remove)"
+                        hasAutoFocus
+                        width="100%"
+                        className="mb-2 font-mono text-xs"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          label="Cancel"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setEditingWorkspaceId(false);
+                            setWorkspaceIdDraft("");
+                          }}
+                        />
+                        <Button
+                          label="Save"
+                          variant="primary"
+                          size="sm"
+                          onClick={() => void handleSaveWorkspaceId()}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <Text type="supporting" color="secondary" className="text-xs">
+                        Workspace ID: {hasWorkspaceId ? "set" : "not set"}
+                        {!hasWorkspaceId && " (only needed for identity-linked keys)"}
+                      </Text>
+                      <Button
+                        label={hasWorkspaceId ? "Change" : "Add"}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setWorkspaceIdDraft("");
+                          setEditingWorkspaceId(true);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           );
         })}
@@ -398,6 +493,23 @@ export const ApiKeysPanel: React.FC = () => {
             width="100%"
             className="mb-3 font-mono text-xs"
           />
+          {addingService === "anthropic" && (
+            <>
+              <Text type="supporting" color="secondary" display="block" className="mb-1 text-xs">
+                Workspace ID (optional — only needed for identity-linked keys; find it in the
+                Anthropic Console under your workspace, looks like <code>wrkspc_…</code>)
+              </Text>
+              <ToolcraftTextInputControl
+                label="Workspace ID"
+                isLabelHidden
+                value={newWorkspaceId}
+                onChange={setNewWorkspaceId}
+                placeholder="wrkspc_… (leave blank if not needed)"
+                width="100%"
+                className="mb-3 font-mono text-xs"
+              />
+            </>
+          )}
           <div className="flex justify-end gap-2">
             <Button
               label="Cancel"
@@ -406,6 +518,7 @@ export const ApiKeysPanel: React.FC = () => {
               onClick={() => {
                 setAddingService(null);
                 setNewKeyValue("");
+                setNewWorkspaceId("");
               }}
             />
             <Button

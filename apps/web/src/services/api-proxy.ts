@@ -154,11 +154,18 @@ export async function apiFetch(
   if (isDev) {
     const config = DIRECT_CONFIG[service];
     const url = `${config.baseUrl}${path}`;
+    // A direct dev call talks to Anthropic itself, so the proxy-only header
+    // name needs translating to the real one it expects.
+    const { "x-proxy-workspace-id": workspaceId, ...restHeaders } = extraHeaders;
+    const devHeaders =
+      service === "anthropic" && workspaceId
+        ? { ...restHeaders, "anthropic-workspace-id": workspaceId }
+        : extraHeaders;
     return fetch(url, {
       ...requestOptions,
       headers: {
         ...config.authHeaders(apiKey),
-        ...extraHeaders,
+        ...devHeaders,
       },
     });
   }

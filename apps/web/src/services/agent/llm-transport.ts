@@ -19,6 +19,7 @@ function makeSend(
   apiKey: string,
   baseUrl?: string,
   signal?: AbortSignal,
+  workspaceId?: string,
 ) {
   return async (body: unknown): Promise<unknown> => {
     if (signal?.aborted) {
@@ -28,7 +29,12 @@ function makeSend(
     try {
       res = await apiFetch(provider, PATHS[provider], apiKey, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(provider === "anthropic" && workspaceId
+            ? { "x-proxy-workspace-id": workspaceId }
+            : {}),
+        },
         body: JSON.stringify(body),
         baseUrl,
         signal,
@@ -63,6 +69,8 @@ export interface BYOKClientOptions {
   readonly baseUrl?: string;
   readonly maxTokens?: number;
   readonly signal?: AbortSignal;
+  /** Required only for identity-linked Anthropic keys (SSO/Console workspaces). */
+  readonly workspaceId?: string;
 }
 
 /**
@@ -71,9 +79,10 @@ export interface BYOKClientOptions {
  * requests for custom endpoints, and keychain-backed native requests on desktop).
  */
 export function makeBYOKClient(opts: BYOKClientOptions): LLMClient {
-  const send = withRetry(makeSend(opts.provider, opts.apiKey, opts.baseUrl, opts.signal), {
-    signal: opts.signal,
-  });
+  const send = withRetry(
+    makeSend(opts.provider, opts.apiKey, opts.baseUrl, opts.signal, opts.workspaceId),
+    { signal: opts.signal },
+  );
   return makeClientFromSend({
     provider:
       opts.provider === "anthropic-compatible" || opts.provider === "anthropic"

@@ -11,6 +11,14 @@ export interface ServiceConfig {
 }
 
 /**
+ * Secure-storage id for the companion Anthropic workspace ID — only needed
+ * for identity-linked keys (issued under an SSO-linked Console workspace).
+ * Not a SERVICE_REGISTRY entry: it's a sub-field of the "anthropic" key,
+ * not a service of its own.
+ */
+export const ANTHROPIC_WORKSPACE_SECRET_ID = "anthropic-workspace-id";
+
+/**
  * Registry of supported external services that require API keys.
  * Add new services here as the app integrates more third-party APIs.
  */

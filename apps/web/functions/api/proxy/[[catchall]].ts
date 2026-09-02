@@ -40,6 +40,13 @@ const SERVICE_CONFIG: Record<string, ServiceConfig> = {
   },
 };
 
+// Identity-linked Anthropic API keys (issued under a workspace tied to a
+// human identity, e.g. via Console SSO) require this header on every
+// request — the browser sends it as `x-proxy-workspace-id` and we
+// translate it to Anthropic's real header name before forwarding.
+const ANTHROPIC_WORKSPACE_HEADER = "anthropic-workspace-id";
+const PROXY_WORKSPACE_HEADER = "x-proxy-workspace-id";
+
 // These are the actual production origins (`wrangler pages project list` /
 // `wrangler pages deployment list`) — the project's *.pages.dev subdomain
 // carries a random suffix Cloudflare assigns on project creation, so it is
@@ -94,7 +101,7 @@ function getCorsHeaders(request: Request): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-proxy-api-key",
+    "Access-Control-Allow-Headers": `Content-Type, x-proxy-api-key, ${PROXY_WORKSPACE_HEADER}`,
     Vary: "Origin",
   };
 }
@@ -179,6 +186,12 @@ export const onRequest: PagesFunction = async (context) => {
   }
   for (const [key, value] of Object.entries(config.authHeaders(apiKey))) {
     upstreamHeaders.set(key, value);
+  }
+  if (service === "anthropic") {
+    const workspaceId = context.request.headers.get(PROXY_WORKSPACE_HEADER);
+    if (workspaceId) {
+      upstreamHeaders.set(ANTHROPIC_WORKSPACE_HEADER, workspaceId);
+    }
   }
 
   let upstreamResponse: Response;

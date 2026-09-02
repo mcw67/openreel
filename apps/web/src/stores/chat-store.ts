@@ -22,7 +22,7 @@ import {
   conversationTitle,
   useChatHistoryStore,
 } from "./chat-history-store";
-import { useSettingsStore } from "./settings-store";
+import { useSettingsStore, ANTHROPIC_WORKSPACE_SECRET_ID } from "./settings-store";
 import { useProjectStore } from "./project-store";
 
 export type ChatStatus = "idle" | "running" | "awaiting_confirm" | "error";
@@ -216,6 +216,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return;
       }
     }
+    let workspaceId: string | undefined;
+    if (!isDesktop() && provider === "anthropic") {
+      workspaceId = (await getSecret(ANTHROPIC_WORKSPACE_SECRET_ID)) ?? undefined;
+    }
     const active = get();
     const conversationId = active.currentConversationId ?? genId();
     const conversationStartedAt = active.conversationStartedAt ?? Date.now();
@@ -307,6 +311,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       apiKey,
       baseUrl,
       signal: controller.signal,
+      workspaceId,
     });
     const priorToolNames = get().conversation.flatMap((message) =>
       message.role === "assistant" ? message.toolUses.map((tool) => tool.name) : [],
