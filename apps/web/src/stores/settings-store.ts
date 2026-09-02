@@ -22,6 +22,12 @@ export const SERVICE_REGISTRY: readonly ServiceConfig[] = [
     docsUrl: "https://elevenlabs.io/docs/api-reference",
   },
   {
+    id: "anthropic",
+    label: "Claude (Anthropic)",
+    description: "Claude models for the agent chat, routed through nugit's same-origin proxy so your key never leaves this origin",
+    docsUrl: "https://console.anthropic.com/settings/keys",
+  },
+  {
     id: "openai-compatible",
     label: "OpenAI-compatible endpoint",
     description: "Any OpenAI-compatible API host; API key optional",
@@ -54,12 +60,16 @@ export const SERVICE_REGISTRY: readonly ServiceConfig[] = [
 ] as const;
 
 export type TtsProvider = "elevenlabs";
-export type LlmProvider = "openai-compatible" | "anthropic-compatible";
+export type LlmProvider = "anthropic" | "openai-compatible" | "anthropic-compatible";
 export type AggregatorProvider = "kie-ai" | "freepik";
 export type SettingsTab = "general" | "api-keys" | "mcp";
 
 function isLlmProvider(value: unknown): value is LlmProvider {
-  return value === "openai-compatible" || value === "anthropic-compatible";
+  return (
+    value === "anthropic" ||
+    value === "openai-compatible" ||
+    value === "anthropic-compatible"
+  );
 }
 
 export interface SettingsState {

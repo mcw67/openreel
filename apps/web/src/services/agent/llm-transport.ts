@@ -9,6 +9,7 @@ import { apiFetch } from "../api-proxy";
 import type { LlmProvider } from "../../stores/settings-store";
 
 const PATHS: Record<LlmProvider, string> = {
+  anthropic: "/messages",
   "openai-compatible": "/chat/completions",
   "anthropic-compatible": "/messages",
 };
@@ -35,7 +36,9 @@ function makeSend(
     } catch (error) {
       if (error instanceof TypeError) {
         throw new Error(
-          "Could not reach the compatible endpoint. Check its URL, availability, and browser CORS settings.",
+          provider === "anthropic"
+            ? "Could not reach Claude. The nugit proxy may be unreachable — try again shortly."
+            : "Could not reach the compatible endpoint. Check its URL, availability, and browser CORS settings.",
         );
       }
       throw error;
@@ -73,7 +76,9 @@ export function makeBYOKClient(opts: BYOKClientOptions): LLMClient {
   });
   return makeClientFromSend({
     provider:
-      opts.provider === "anthropic-compatible" ? "anthropic" : "openai",
+      opts.provider === "anthropic-compatible" || opts.provider === "anthropic"
+        ? "anthropic"
+        : "openai",
     model: opts.model,
     maxTokens: opts.maxTokens,
     omitMaxTokens: opts.provider === "openai-compatible" && opts.maxTokens === undefined,

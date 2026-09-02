@@ -40,9 +40,13 @@ const SERVICE_CONFIG: Record<string, ServiceConfig> = {
   },
 };
 
+// These are the actual production origins (`wrangler pages project list` /
+// `wrangler pages deployment list`) — the project's *.pages.dev subdomain
+// carries a random suffix Cloudflare assigns on project creation, so it is
+// NOT just "<project-name>.pages.dev". Verify before editing, don't guess.
 const ALLOWED_ORIGINS = [
-  "https://openreel.pages.dev",
-  "https://openreel-preview.pages.dev",
+  "https://editor.nugit.cloud",
+  "https://openreel-3zt.pages.dev",
   "http://localhost:5173",
   "http://localhost:4173",
 ];

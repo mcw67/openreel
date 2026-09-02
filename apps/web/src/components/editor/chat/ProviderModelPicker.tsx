@@ -14,12 +14,14 @@ import {
   type LlmProvider,
 } from "../../../stores/settings-store";
 import { discoverCompatibleModels } from "../../../services/agent/model-discovery";
+import { defaultModelFor, modelsFor } from "../../../services/agent/models";
 import {
   getSecret,
   isSessionUnlocked,
 } from "../../../services/secure-storage";
 
 const PROVIDERS: ReadonlyArray<{ id: LlmProvider; label: string }> = [
+  { id: "anthropic", label: "Claude (Anthropic)" },
   { id: "openai-compatible", label: "OpenAI-compatible" },
   { id: "anthropic-compatible", label: "Anthropic-compatible" },
 ];
@@ -51,6 +53,7 @@ export function ProviderModelPicker({
   const providerLabel =
     PROVIDERS.find((item) => item.id === provider)?.label ?? "Not configured";
   const currentModel = model.trim();
+  const isBuiltIn = provider === "anthropic";
 
   const discoverModels = async (): Promise<void> => {
     if (!provider) {
@@ -108,10 +111,12 @@ export function ProviderModelPicker({
         <div className="space-y-3 p-3">
           <div>
             <Text type="body" color="primary" className="text-[12px] font-medium">
-              Connect any compatible model
+              {isBuiltIn ? "Claude for the agent chat" : "Connect any compatible model"}
             </Text>
             <Text type="supporting" color="secondary" className="mt-0.5 block text-[10px] leading-relaxed">
-              Choose the API format, then use your own host and model. OpenReel does not select a vendor or model for you.
+              {isBuiltIn
+                ? "Fixed endpoint, routed through nugit's proxy — no host to configure. Add your own Anthropic key below."
+                : "Choose the API format, then use your own host and model. OpenReel does not select a vendor or model for you."}
             </Text>
           </div>
 
@@ -125,89 +130,113 @@ export function ProviderModelPicker({
               ...PROVIDERS.map((item) => ({ value: item.id, label: item.label })),
             ]}
             onChange={(value) => {
-              setProvider((value || null) as LlmProvider | null);
+              const next = (value || null) as LlmProvider | null;
+              setProvider(next);
               setDiscoveredModels([]);
               setDiscoveryStatus("idle");
               setDiscoveryMessage("");
+              if (next === "anthropic" && !model.trim()) {
+                setModel(defaultModelFor("anthropic"));
+              }
             }}
           />
 
-          <TextInput
-            label="Base URL"
-            value={baseUrl}
-            onChange={(value) => {
-              setBaseUrl(value);
-              setDiscoveredModels([]);
-              setDiscoveryStatus("idle");
-            }}
-            placeholder={
-              provider === "anthropic-compatible"
-                ? "https://gateway.example/v1"
-                : "http://localhost:11434/v1"
-            }
-            width="100%"
-          />
+          {!isBuiltIn && (
+            <TextInput
+              label="Base URL"
+              value={baseUrl}
+              onChange={(value) => {
+                setBaseUrl(value);
+                setDiscoveredModels([]);
+                setDiscoveryStatus("idle");
+              }}
+              placeholder={
+                provider === "anthropic-compatible"
+                  ? "https://gateway.example/v1"
+                  : "http://localhost:11434/v1"
+              }
+              width="100%"
+            />
+          )}
 
-          <div className="space-y-2 rounded-md border border-border bg-bg-2 p-2">
-            <div className="flex items-end gap-2">
-              <div className="min-w-0 flex-1">
-                <TextInput
-                  label="Model ID"
-                  value={model}
-                  onChange={setModel}
-                  placeholder="Enter any tool-capable model ID"
-                  width="100%"
+          {isBuiltIn ? (
+            <Selector
+              label="Model"
+              size="sm"
+              width="100%"
+              value={currentModel}
+              options={modelsFor("anthropic").map((item) => ({
+                value: item.id,
+                label: item.label,
+              }))}
+              onChange={(value) => {
+                if (value) setModel(value);
+              }}
+            />
+          ) : (
+            <div className="space-y-2 rounded-md border border-border bg-bg-2 p-2">
+              <div className="flex items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <TextInput
+                    label="Model ID"
+                    value={model}
+                    onChange={setModel}
+                    placeholder="Enter any tool-capable model ID"
+                    width="100%"
+                  />
+                </div>
+                <Button
+                  label={discoveryStatus === "loading" ? "Loading…" : "Load models"}
+                  size="sm"
+                  variant="secondary"
+                  isDisabled={discoveryStatus === "loading" || !provider || !baseUrl.trim()}
+                  onClick={() => void discoverModels()}
                 />
               </div>
-              <Button
-                label={discoveryStatus === "loading" ? "Loading…" : "Load models"}
-                size="sm"
-                variant="secondary"
-                isDisabled={discoveryStatus === "loading" || !provider || !baseUrl.trim()}
-                onClick={() => void discoverModels()}
-              />
+
+              {discoveredModels.length > 0 && (
+                <Selector
+                  label="Models from endpoint"
+                  size="sm"
+                  width="100%"
+                  value={
+                    discoveredModels.some((item) => item.id === currentModel)
+                      ? currentModel
+                      : ""
+                  }
+                  options={[
+                    { value: "", label: "Choose a discovered model…" },
+                    ...discoveredModels.map((item) => ({
+                      value: item.id,
+                      label: item.label === item.id ? item.id : `${item.label} · ${item.id}`,
+                    })),
+                  ]}
+                  onChange={(value) => {
+                    if (value) setModel(value);
+                  }}
+                />
+              )}
+
+              {discoveryStatus !== "idle" && discoveryStatus !== "loading" && (
+                <Text
+                  type="supporting"
+                  color={discoveryStatus === "error" ? "danger" : "secondary"}
+                  className="block text-[10px] leading-relaxed"
+                >
+                  {discoveryMessage}
+                </Text>
+              )}
             </div>
+          )}
 
-            {discoveredModels.length > 0 && (
-              <Selector
-                label="Models from endpoint"
-                size="sm"
-                width="100%"
-                value={
-                  discoveredModels.some((item) => item.id === currentModel)
-                    ? currentModel
-                    : ""
-                }
-                options={[
-                  { value: "", label: "Choose a discovered model…" },
-                  ...discoveredModels.map((item) => ({
-                    value: item.id,
-                    label: item.label === item.id ? item.id : `${item.label} · ${item.id}`,
-                  })),
-                ]}
-                onChange={(value) => {
-                  if (value) setModel(value);
-                }}
-              />
-            )}
-
-            {discoveryStatus !== "idle" && discoveryStatus !== "loading" && (
-              <Text
-                type="supporting"
-                color={discoveryStatus === "error" ? "danger" : "secondary"}
-                className="block text-[10px] leading-relaxed"
-              >
-                {discoveryMessage}
-              </Text>
-            )}
-          </div>
-
-          <Text type="supporting" color="secondary" className="block text-[10px] leading-relaxed">
-            Model discovery uses GET /models. If your gateway does not expose it, enter the model ID manually. Browser endpoints must allow CORS.
-          </Text>
+          {!isBuiltIn && (
+            <Text type="supporting" color="secondary" className="block text-[10px] leading-relaxed">
+              Model discovery uses GET /models. If your gateway does not expose it, enter the model ID manually. Browser endpoints must allow CORS.
+            </Text>
+          )}
 
           <Button
-            label="Manage optional API key"
+            label={isBuiltIn ? "Add your Anthropic API key" : "Manage optional API key"}
             size="sm"
             variant="secondary"
             onClick={() => {

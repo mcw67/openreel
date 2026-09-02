@@ -8,6 +8,7 @@ import { ToolcraftText as Text } from "@openreel/ui";
 import { ToolcraftTextInputControl as TextInput } from "@openreel/ui";
 import { useSettingsStore, SERVICE_REGISTRY, type TtsProvider, type LlmProvider, type AggregatorProvider } from "../../../stores/settings-store";
 import { useProjectStore } from "../../../stores/project-store";
+import { modelsFor } from "../../../services/agent/models";
 import { EDITING_FRAME_RATE_OPTIONS } from "../editing-frame-rate";
 
 const ASPECT_PRESETS: Array<{ label: string; width: number; height: number }> = [
@@ -94,7 +95,7 @@ export const GeneralPanel: React.FC = () => {
   const ttsProviders = SERVICE_REGISTRY.filter((s) => s.id === "elevenlabs");
 
   const llmProviders = SERVICE_REGISTRY.filter(
-    (s) => s.id === "openai-compatible" || s.id === "anthropic-compatible",
+    (s) => s.id === "anthropic" || s.id === "openai-compatible" || s.id === "anthropic-compatible",
   );
 
   const aggregatorProviders = SERVICE_REGISTRY.filter(
@@ -358,7 +359,29 @@ export const GeneralPanel: React.FC = () => {
             />
           </div>
 
-          {defaultLlmProvider ? (
+          {defaultLlmProvider === "anthropic" ? (
+            <div className="space-y-3 rounded-lg border border-border bg-background-tertiary p-3">
+              <div>
+                <Text type="supporting" color="secondary" className="text-sm font-medium">
+                  Claude (Anthropic)
+                </Text>
+                <Text type="supporting" color="secondary" className="mt-0.5 block text-xs">
+                  Fixed endpoint, routed through nugit's proxy — no host to configure.
+                </Text>
+              </div>
+              <Selector
+                label="Model"
+                size="md"
+                width="100%"
+                value={llmModel}
+                onChange={setLlmModel}
+                options={modelsFor("anthropic").map((m) => ({ label: m.label, value: m.id }))}
+              />
+              <Text type="supporting" color="secondary" className="block text-[11px] leading-relaxed">
+                Add your Anthropic API key in the API Keys tab — it's required, not optional, for this provider.
+              </Text>
+            </div>
+          ) : defaultLlmProvider ? (
             <div className="space-y-3 rounded-lg border border-border bg-background-tertiary p-3">
               <div>
                 <Text type="supporting" color="secondary" className="text-sm font-medium">

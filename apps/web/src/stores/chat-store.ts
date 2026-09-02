@@ -172,15 +172,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ error: "Enter or choose a model ID in AI settings." });
       return;
     }
-    let baseUrl: string;
-    try {
-      baseUrl = normalizeCompatibleBaseUrl(settings.llmBaseUrl);
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : "Enter a valid compatible endpoint URL." });
-      return;
+    // "anthropic" is a fixed, built-in endpoint (routed through our own
+    // same-origin proxy) — there's no user-supplied host to normalize.
+    let baseUrl = "";
+    if (provider !== "anthropic") {
+      try {
+        baseUrl = normalizeCompatibleBaseUrl(settings.llmBaseUrl);
+      } catch (error) {
+        set({ error: error instanceof Error ? error.message : "Enter a valid compatible endpoint URL." });
+        return;
+      }
     }
 
-    const keyRequired = settings.configuredServices.includes(provider);
+    // Unlike the "-compatible" endpoints (key optional — some gateways don't
+    // need one), the built-in Anthropic key is always required.
+    const keyRequired = provider === "anthropic" || settings.configuredServices.includes(provider);
     if (!isDesktop() && keyRequired && !isSessionUnlocked()) {
       set({ error: "Unlock secure storage to use your API key." });
       return;
@@ -194,7 +200,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         return;
       }
       if (!apiKey) {
-        set({ error: "The configured endpoint API key could not be loaded." });
+        set({
+          error:
+            provider === "anthropic"
+              ? "Add your Anthropic API key in AI settings first."
+              : "The configured endpoint API key could not be loaded.",
+        });
         return;
       }
     }

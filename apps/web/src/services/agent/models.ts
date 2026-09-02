@@ -6,10 +6,19 @@ export interface LlmModelOption {
 }
 
 /**
- * Compatible endpoints own their model catalogs. This registry intentionally
- * stays empty so the app never invents a provider or model selection.
+ * Compatible endpoints own their model catalogs — those two registries
+ * intentionally stay empty so the app never invents a provider or model
+ * selection for a user-supplied host. "anthropic" is different: it's a
+ * genuine first-party integration (fixed endpoint, routed through our own
+ * proxy), so a real, known model list is exactly what a user picking it
+ * expects.
  */
 export const LLM_MODELS: Record<LlmProvider, LlmModelOption[]> = {
+  anthropic: [
+    { id: "claude-sonnet-5", label: "Claude Sonnet 5" },
+    { id: "claude-opus-5", label: "Claude Opus 5" },
+    { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
+  ],
   "openai-compatible": [],
   "anthropic-compatible": [],
 };
