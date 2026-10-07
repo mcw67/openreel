@@ -465,12 +465,12 @@ export const ApiKeysPanel: React.FC = () => {
               <li>
                 Go to{" "}
                 <a
-                  href="https://nugit.cloud/profile"
+                  href="https://nugits.com/profile"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary underline underline-offset-2"
                 >
-                  nugit.cloud/profile
+                  nugits.com/profile
                 </a>{" "}
                 and sign in.
               </li>

@@ -52,6 +52,7 @@ const PROXY_WORKSPACE_HEADER = "x-proxy-workspace-id";
 // carries a random suffix Cloudflare assigns on project creation, so it is
 // NOT just "<project-name>.pages.dev". Verify before editing, don't guess.
 const ALLOWED_ORIGINS = [
+  "https://editor.nugits.com",
   "https://editor.nugit.cloud",
   "https://openreel-3zt.pages.dev",
   "http://localhost:5173",

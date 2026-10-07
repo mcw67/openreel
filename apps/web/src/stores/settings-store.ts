@@ -63,7 +63,7 @@ export const SERVICE_REGISTRY: readonly ServiceConfig[] = [
     id: "nugit",
     label: "nugit Vault",
     description: "Export finished clips and motion graphics straight into your nugit Vault",
-    docsUrl: "https://nugit.cloud/profile",
+    docsUrl: "https://nugits.com/profile",
   },
 ] as const;
 
